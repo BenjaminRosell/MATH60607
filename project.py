@@ -17,11 +17,7 @@ class Sorcerer:
             self.describe_corpus()
 
     def generate_corpus(self, count):
-        corpus = {}
-        for i in range(count):
-            corpus[i + 1] = []
-
-        return corpus
+        return {i: [] for i in range(1, count + 1)}
 
     def contains_chars(self, string, char_set):
         pattern = f"[{''.join(char_set)}]"
@@ -80,16 +76,11 @@ class Sorcerer:
 
     def get_permutations(self, position):
         row, column = position
-        possible_rows = [row - 1, row, row + 1]
-        possible_columns = [column - 1, column, column + 1]
-
-        # removing impossible values
-        possible_rows = [item for item in possible_rows if 0 <= item <= 2]
-        possible_columns = [item for item in possible_columns if 0 <= item <= 9]
+        possible_rows = [r for r in [row - 1, row, row + 1] if 0 <= r <= 2]
+        possible_columns = [c for c in [column - 1, column, column + 1] if 0 <= c <= 9]
         possible_permutations = list(product(possible_rows, possible_columns))
-
-        if possible_columns[len(possible_columns) - 1] >= 6:
-            possible_permutations = [p for p in possible_permutations if self.validate_permutation(p) is not None]
+        if column >= 6:
+            possible_permutations = [p for p in possible_permutations if self.validate_permutation(p)]
 
         return possible_permutations
 
@@ -126,48 +117,35 @@ class Sorcerer:
     def generate_variants(self):
         misspells = self.generate_misspells()
         swaps = self.generate_swaps()
-
         variants = misspells + swaps
-
-        # Use a set to keep track of unique lists (converted to tuples of tuples)
         seen = set()
+        # Removing duplicates using a list comprehension and a set
+        return [lst for lst in variants if not (t := tuple(lst)) in seen and not seen.add(t)]
 
-        # Store the unique lists here
-        unique_lists = []
-
-        for lst in variants:
-            # Convert the list of tuples to a tuple of tuples
-            tuple_version = tuple(lst)
-
-            # If this tuple of tuples is not in the set, it's unique
-            if tuple_version not in seen:
-                seen.add(tuple_version)
-                unique_lists.append(lst)
-
-        return unique_lists
 
     def predict(self, word):
         self.word = word
         variants = self.generate_variants()
-        suggestions = []
-        for variant in variants:
-            suggestions.append((self.keyboard_to_word(variant), self.get_suggestions(len(word), variant)))
+        suggestions = [(self.keyboard_to_word(variant), self.get_suggestions(len(word), variant)) for variant in variants]
 
         if self.debug:
-            for variant, suggestion_list in suggestions:
-                print("The word you typed is: {}".format(word))
-                print("Calculating suggestions for variant: {}".format(variant))
-                print("The best 10 suggestions are: ")
-                for suggestion, distance in suggestion_list:
-                    print("The word {}, with a total distance of {}".format(suggestion, distance))
+            self.display_debug_info(suggestions)
 
         results = self.results(suggestions)
 
-        if self.mode == 'slim':
+        if results and self.mode == 'slim':
             variant, (word, distance) = results[0]
             return word
         else:
             self.display_results(results)
+
+    def display_debug_info(self, suggestions):
+        for variant, suggestion_list in suggestions:
+            print("The word you typed is: {}".format(self.word))
+            print("Calculating suggestions for variant: {}".format(variant))
+            print("The best 10 suggestions are: ")
+            for suggestion, distance in suggestion_list:
+                print("The word {}, with a total distance of {}".format(suggestion, distance))
 
     def validate_permutation(self, permutation):
         row, column = permutation
@@ -194,17 +172,15 @@ class Sorcerer:
         return [sum((abs(a - c), abs(b - d))) for (a, b), (c, d) in zip(encoded_word, variant)]
 
     def results(self, suggestions):
-        # Flatten the structure
-        flattened_data = [(word, variant, distance) for word, data in suggestions for variant, distance in data]
-
-        # Dictionary to store the minimum distance for each variant
         min_distances = {}
-
-        for word, variant, distance in flattened_data:
+        for word, variant, distance in self.flatten_suggestions(suggestions):
             if variant not in min_distances or distance < min_distances[variant][1]:
                 min_distances[variant] = (word, distance)
 
         return sorted(min_distances.items(), key=lambda x: x[1][1])
+
+    def flatten_suggestions(self, suggestions):
+        return [(word, variant, distance) for word, data in suggestions for variant, distance in data]
 
     def display_results(self, results):
         for variant, (word, distance) in results[:10]:
@@ -212,15 +188,15 @@ class Sorcerer:
 
 
 @click.command()
-#@click.option("--word", "-w", prompt="What is your word ? ")
-@click.option("--word", "-w", default='informagion')
-@click.option("--debug", "-d", default=False)
-@click.option("--mode", "-m", default="slim")
+@click.option("--word", "-w", default='information', help="The word to predict variants for.")
+@click.option("--debug", "-d", is_flag=True, help="Enable debug mode.")
+@click.option("--mode", "-m", default="slim", type=click.Choice(['slim', 'full']), help="Output mode: 'slim' or 'full'.")
 @timer
 def main(word, debug, mode):
     sorcerer = Sorcerer(debug, mode)
     predicted = sorcerer.predict(word)
-    print(predicted)
+    if mode == 'slim':
+        print(predicted)
 
 
 if __name__ == '__main__':
