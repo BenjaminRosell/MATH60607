@@ -12,6 +12,7 @@ class Sorcerer:
         self.debug = debug
         self.mode = mode
         self.keyboard = self.get_keyboard()
+        self.reverse_keyboard = {v: k for k, v in self.keyboard.items()}
         self.corpus = self.prepare_corpus()
         if self.debug:
             self.describe_corpus()
@@ -52,24 +53,24 @@ class Sorcerer:
         plt.show()
 
     def get_keyboard(self):
-        return {
-            0: ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
-            1: ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
-            2: ['z', 'x', 'c', 'v', 'b', 'n', 'm']
+        keyboard_layout = {
+            'q': (0, 0), 'w': (0, 1), 'e': (0, 2), 'r': (0, 3), 't': (0, 4),
+            'y': (0, 5), 'u': (0, 6), 'i': (0, 7), 'o': (0, 8), 'p': (0, 9),
+            'a': (1, 0), 's': (1, 1), 'd': (1, 2), 'f': (1, 3), 'g': (1, 4),
+            'h': (1, 5), 'j': (1, 6), 'k': (1, 7), 'l': (1, 8),
+            'z': (2, 0), 'x': (2, 1), 'c': (2, 2), 'v': (2, 3), 'b': (2, 4),
+            'n': (2, 5), 'm': (2, 6)
         }
+        return keyboard_layout
 
     def find_element_in_keyboard(self, element):
-        for key, value_list in self.keyboard.items():
-            if element in value_list:
-                return key, value_list.index(element)
-        return None, None
+        return self.keyboard.get(element, (None, None))
 
     def word_to_keyboard(self, word):
         return [self.find_element_in_keyboard(letter) for letter in word]
 
-    def keyboard_to_letter(self, letter):
-        row, column = letter
-        return self.keyboard.get(row)[column]
+    def keyboard_to_letter(self, keyboard):
+        return self.reverse_keyboard.get(keyboard, None)
 
     def keyboard_to_word(self, word):
         return ''.join([self.keyboard_to_letter(letter) for letter in word])
@@ -148,9 +149,8 @@ class Sorcerer:
                 print("The word {}, with a total distance of {}".format(suggestion, distance))
 
     def validate_permutation(self, permutation):
-        row, column = permutation
         try:
-            return self.keyboard.get(row)[column]
+            return self.keyboard_to_letter(permutation)
         except IndexError:
             return None
 
