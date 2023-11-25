@@ -1,8 +1,8 @@
 from english_words import get_english_words_set
-import click
 import matplotlib.pyplot as plt
 from itertools import product
 from utils import timer
+import click, re
 
 
 class Sorcerer:
@@ -23,6 +23,11 @@ class Sorcerer:
 
         return corpus
 
+    def contains_chars(self, string, char_set):
+        pattern = f"[{''.join(char_set)}]"
+        return bool(re.search(pattern, string))
+
+
     def prepare_corpus(self):
         words = get_english_words_set(['web2'], lower=True)
         if self.debug:
@@ -31,10 +36,11 @@ class Sorcerer:
         longest = 0
         for word in words:
             count = len(word)
-            corpus[count].append(word)
-            if count > longest:
-                longest = count
-                longest_word = word
+            if not self.contains_chars(word, {'-'}):
+                corpus[count].append(word)
+                if count > longest:
+                    longest = count
+                    longest_word = word
 
         if self.debug:
             print('The longest word is ' + longest_word)
@@ -182,6 +188,9 @@ class Sorcerer:
 
     def calculate_distance(self, word, variant):
         encoded_word = self.word_to_keyboard(word)
+        # print(self.keyboard_to_word(variant))
+        # updated_list = [(0, 0) if x == (None, None) else x for x in encoded_word]
+        # print(self.keyboard_to_word(updated_list))
         return [sum((abs(a - c), abs(b - d))) for (a, b), (c, d) in zip(encoded_word, variant)]
 
     def results(self, suggestions):
@@ -203,8 +212,8 @@ class Sorcerer:
 
 
 @click.command()
-@click.option("--word", "-w", prompt="What is your word ? ")
-# @click.option("--word", "-w", default='tesla')
+#@click.option("--word", "-w", prompt="What is your word ? ")
+@click.option("--word", "-w", default='informagion')
 @click.option("--debug", "-d", default=False)
 @click.option("--mode", "-m", default="slim")
 @timer
