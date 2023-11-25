@@ -2,9 +2,19 @@ from english_words import get_english_words_set
 import click
 import matplotlib.pyplot as plt
 from itertools import product
+from utils import timer
 
 
 class Sorcerer:
+
+    def __init__(self, debug, mode):
+        self.word = None
+        self.debug = debug
+        self.mode = mode
+        self.keyboard = self.get_keyboard()
+        self.corpus = self.prepare_corpus()
+        if self.debug:
+            self.describe_corpus()
 
     def generate_corpus(self, count):
         corpus = {}
@@ -145,15 +155,13 @@ class Sorcerer:
                 for suggestion, distance in suggestion_list:
                     print("The word {}, with a total distance of {}".format(suggestion, distance))
 
-        self.display_results(suggestions)
+        results = self.results(suggestions)
 
-    def __init__(self, debug):
-        self.word = None
-        self.debug = debug
-        self.keyboard = self.get_keyboard()
-        self.corpus = self.prepare_corpus()
-        if self.debug:
-            self.describe_corpus()
+        if self.mode == 'slim':
+            variant, (word, distance) = results[0]
+            return word
+        else:
+            self.display_results(results)
 
     def validate_permutation(self, permutation):
         row, column = permutation
@@ -176,25 +184,34 @@ class Sorcerer:
         encoded_word = self.word_to_keyboard(word)
         return [sum((abs(a - c), abs(b - d))) for (a, b), (c, d) in zip(encoded_word, variant)]
 
-    def display_results(self, suggestions):
+    def results(self, suggestions):
         # Flatten the structure
         flattened_data = [(word, variant, distance) for word, data in suggestions for variant, distance in data]
-        # Sort by distance
-        flattened_data.sort(key=lambda x: x[2])
 
-        # Display the results
-        for word, variant, distance in flattened_data[:10]:
-            #print(f"Word: {word}, Variant: {variant}, Distance: {distance}")
-            if distance <= 1:
-                print(f"From the input: {word}, our guess is: {variant}, Distance: {distance}")
+        # Dictionary to store the minimum distance for each variant
+        min_distances = {}
+
+        for word, variant, distance in flattened_data:
+            if variant not in min_distances or distance < min_distances[variant][1]:
+                min_distances[variant] = (word, distance)
+
+        return sorted(min_distances.items(), key=lambda x: x[1][1])
+
+    def display_results(self, results):
+        for variant, (word, distance) in results[:10]:
+            print(f"From the input: {word}, our guess is: {variant}, Distance: {distance}")
+
 
 @click.command()
 @click.option("--word", "-w", prompt="What is your word ? ")
 # @click.option("--word", "-w", default='tesla')
 @click.option("--debug", "-d", default=False)
-def main(word, debug):
-    sorcerer = Sorcerer(debug)
-    sorcerer.predict(word)
+@click.option("--mode", "-m", default="slim")
+@timer
+def main(word, debug, mode):
+    sorcerer = Sorcerer(debug, mode)
+    predicted = sorcerer.predict(word)
+    print(predicted)
 
 
 if __name__ == '__main__':
