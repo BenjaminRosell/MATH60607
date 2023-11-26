@@ -89,18 +89,18 @@ class Sorcerer:
 
         return possible_permutations
 
+    def generate_misspells_parallel(self, args):
+        index, permutations, positions = args
+        return [positions[:index] + [variation] + positions[index + 1:] for variation in permutations]
+
     def generate_misspells(self):
         with Pool() as pool:
             positions = self.word_to_keyboard(self.word)
             permutations = pool.map(self.get_permutations, positions)
-
-            all_combinations = []
-            for i, position in enumerate(positions):
-                for variation in permutations[i]:
-                    new_combination = positions[:i] + [variation] + positions[i + 1:]
-                    all_combinations.append(new_combination)
-
-        return all_combinations
+            #preparing parallelization...
+            args = [(i, permutations[i], positions) for i in range(len(positions))]
+            all_combinations = pool.map(self.generate_misspells_parallel, args)
+            return list(chain.from_iterable(all_combinations))
 
     def generate_swaps(self):
         all_combinations = []
@@ -158,10 +158,7 @@ class Sorcerer:
             return None
 
     def get_suggestions(self, word_length, variant):
-        distances = []
-        for word in self.corpus[word_length]:
-            distances.append(sum(self.calculate_distance(word, variant)))
-
+        distances = [sum(self.calculate_distance(word, variant)) for word in self.corpus[word_length]]
         sorted_with_index = sorted(enumerate(distances), key=lambda x: x[1])
         return [(self.keyboard_to_word(variant), self.corpus[word_length][index], element) for index, element in sorted_with_index[:5]]
 
