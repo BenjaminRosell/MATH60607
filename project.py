@@ -6,7 +6,6 @@ import re
 from english_words import get_english_words_set
 
 from utils import timer
-from multiprocessing import Pool
 
 
 class Sorcerer:
@@ -79,58 +78,10 @@ class Sorcerer:
     def keyboard_to_word(self, word):
         return ''.join([self.keyboard_to_letter(letter) for letter in word])
 
-    def get_permutations(self, position):
-        row, column = position
-        possible_rows = [r for r in [row - 1, row, row + 1] if 0 <= r <= 2]
-        possible_columns = [c for c in [column - 1, column, column + 1] if 0 <= c <= 9]
-        possible_permutations = list(product(possible_rows, possible_columns))
-        if column >= 6:
-            possible_permutations = [p for p in possible_permutations if self.validate_permutation(p)]
-
-        return possible_permutations
-
-    def generate_misspells_parallel(self, args):
-        index, permutations, positions = args
-        return [positions[:index] + [variation] + positions[index + 1:] for variation in permutations]
-
-    def generate_misspells(self):
-        with Pool() as pool:
-            positions = self.word_to_keyboard(self.word)
-            permutations = pool.map(self.get_permutations, positions)
-            #preparing parallelization...
-            args = [(i, permutations[i], positions) for i in range(len(positions))]
-            all_combinations = pool.map(self.generate_misspells_parallel, args)
-            return list(chain.from_iterable(all_combinations))
-
-    def generate_swaps(self):
-        all_combinations = []
-
-        positions = self.word_to_keyboard(self.word)
-
-        for i in range(len(positions) - 1):
-            # Swap adjacent elements
-            positions[i], positions[i + 1] = positions[i + 1], positions[i]
-            all_combinations.append(positions.copy())
-            # Swap back to restore original list
-            positions[i], positions[i + 1] = positions[i + 1], positions[i]
-
-        return all_combinations
-
-    def generate_variants(self):
-        misspells = self.generate_misspells()
-        swaps = self.generate_swaps()
-        variants = misspells + swaps
-        seen = set()
-        # Removing duplicates using a list comprehension and a set
-        return [lst for lst in variants if not (t := tuple(lst)) in seen and not seen.add(t)]
-
 
     def predict(self, word):
         self.word = word
-        variants = self.generate_variants()
-        with Pool() as pool:
-            suggestions = pool.starmap(self.get_suggestions,
-                                       [(len(word), variant) for variant in variants])
+        suggestions = self.get_suggestions(len(word), self.word_to_keyboard(word))
 
         if self.debug:
             self.display_debug_info(suggestions)
@@ -139,7 +90,7 @@ class Sorcerer:
 
         if results and self.mode == 'slim':
             variant, (word, distance) = results[0]
-            return word
+            return variant
         else:
             self.display_results(results)
 
@@ -151,11 +102,6 @@ class Sorcerer:
             for suggestion, distance in suggestion_list:
                 print("The word {}, with a total distance of {}".format(suggestion, distance))
 
-    def validate_permutation(self, permutation):
-        try:
-            return self.keyboard_to_letter(permutation)
-        except IndexError:
-            return None
 
     def get_suggestions(self, word_length, variant):
         distances = [sum(self.calculate_distance(word, variant)) for word in self.corpus[word_length]]
@@ -172,7 +118,7 @@ class Sorcerer:
 
     def results(self, suggestions):
         min_distances = {}
-        for word, variant, distance in list(chain.from_iterable(suggestions)):
+        for word, variant, distance in suggestions:
             if variant not in min_distances or distance < min_distances[variant][1]:
                 min_distances[variant] = (word, distance)
 

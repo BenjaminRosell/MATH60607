@@ -3,56 +3,71 @@ from utils import timer
 
 @timer
 def main():
-    assert predict('newspaler') == 'newspaper'
-    assert predict('informagion') == 'information'
-    assert predict('backrround') == 'background'
-    assert predict('oppodtunity') == 'opportunity'
-    assert predict('importnat') == 'important'
-    assert predict('marleting') == 'marketing'
-    assert predict('protecgion') == 'protection'
-    assert predict('produdtion') == 'production'
-    # assert predict('develolment') == 'development'
-    # assert predict('environnent') == 'environment'
-    # assert predict('umiversity') == 'university'
-    # assert predict('popukation') == 'population'
-    # assert predict('ddpartment') == 'department'
-    # assert predict('apqrtment') == 'apartment'
-    # assert predict('comnitment') == 'commitment'
-    # assert predict('responsivle') == 'responsible'
-    # assert predict('discuwsion') == 'discussion'
-    # assert predict('spectqcular') == 'spectacular'
-    # assert predict('chocplate') == 'chocolate'
-    # assert predict('partifular') == 'particular'
-    # assert predict('tradigional') == 'traditional'
-    # assert predict('diffisulty') == 'difficulty'
-    # assert predict('cimmercial') == 'commercial'
-    # assert predict('ewucation') == 'education'
-    # assert predict('sometying') == 'something'
-    # assert predict('operayion') == 'operation'
-    # assert predict('journqlist') == 'journalist'
-    # assert predict('celebrayion') == 'celebration'
-    # assert predict('manafement') == 'management'
-    # assert predict('edpecially') == 'especially'
-    # assert predict('experirnce') == 'experience'
-    # assert predict('relatjonship') == 'relationship'
-    # assert predict('conferfnce') == 'conference'
-    # assert predict('associstion') == 'association'
-    # assert predict('ligerature') == 'literature'
-    # assert predict('prdsident') == 'president'
-    # assert predict('tecjnology') == 'technology'
-    # assert predict('colkection') == 'collection'
-    # assert predict('induatrial') == 'industrial'
-    # assert predict('difrerence') == 'difference'
-    # assert predict('voluntwer') == 'volunteer'
-    # assert predict('conmunity') == 'community'
-    # assert predict('remaruable') == 'remarkable'
-    # assert predict('investmejt') == 'investment'
-    # assert predict('succesqful') == 'successful'
-    # assert predict('sugrestion') == 'suggestion'
-    # assert predict('thriughout') == 'throughout'
-    # assert predict('achiebement') == 'achievement'
-    # assert predict('sectetary') == 'secretary'
-    # assert predict('undersgand') == 'understand'
+    test_cases = [
+        ('newspaler', 'newspaper'),
+        ('informagion', 'information'),
+        ('backrround', 'background'),
+        ('oppodtunity', 'opportunity'),
+        ('importnat', 'important'),
+        ('marleting', 'marketing'),
+        ('protecgion', 'protection'),
+        ('produdtion', 'production'),
+        ('develolment', 'development'),
+        ('environnent', 'environment'),
+        ('umiversity', 'university'),
+        ('popukation', 'population'),
+        ('ddpartment', 'department'),
+        ('apqrtment', 'apartment'),
+        ('comnitment', 'commitment'),
+        ('responsivle', 'responsible'),
+        ('discuwsion', 'discussion'),
+        ('spectqcular', 'spectacular'),
+        ('chocplate', 'chocolate'),
+        ('partifular', 'particular'),
+        ('tradigional', 'traditional'),
+        ('diffisulty', 'difficulty'),
+        ('cimmercial', 'commercial'),
+        ('ewucation', 'education'),
+        ('sometying', 'something'),
+        ('operayion', 'operation'),
+        ('journqlist', 'journalist'),
+        ('celebrayion', 'celebration'),
+        ('manafement', 'management'),
+        ('edpecially', 'especially'),
+        ('experirnce', 'experience'),
+        ('relatjonship', 'relationship'),
+        ('conferfnce', 'conference'),
+        ('associstion', 'association'),
+        ('ligerature', 'literature'),
+        ('prdsident', 'president'),
+        ('tecjnology', 'technology'),
+        ('colkection', 'collection'),
+        ('induatrial', 'industrial'),
+        ('difrerence', 'difference'),
+        ('voluntwer', 'volunteer'),
+        ('conmunity', 'community'),
+        ('remaruable', 'remarkable'),
+        ('investmejt', 'investment'),
+        ('succesqful', 'successful'),
+        ('sugrestion', 'suggestion'),
+        ('thriughout', 'throughout'),
+        ('achiebement', 'achievement'),
+        ('sectetary', 'secretary'),
+        ('undersgand', 'understand')
+    ]
+
+    successful_assertions = 0
+
+    for input_word, expected_output in test_cases:
+        try:
+            assert predict(input_word) == expected_output
+            successful_assertions += 1
+        except AssertionError:
+            print(f"Assertion failed for: predict({input_word}) == {expected_output}")
+            print(f"Predicted word is == {predict(input_word)}")
+
+    print(f"Number of successful assertions: {successful_assertions}")
+
 
 @timer
 def predict(word):
