@@ -1,8 +1,12 @@
-from english_words import get_english_words_set
+from itertools import product, chain
+
+import click
 import matplotlib.pyplot as plt
-from itertools import product
+import re
+from english_words import get_english_words_set
+
 from utils import timer
-import click, re
+from multiprocessing import Pool
 
 
 class Sorcerer:
@@ -86,18 +90,15 @@ class Sorcerer:
         return possible_permutations
 
     def generate_misspells(self):
-        positions = self.word_to_keyboard(self.word)
-        permutations = []
-        for position in positions:
-            permutations.append(self.get_permutations(position))
+        with Pool() as pool:
+            positions = self.word_to_keyboard(self.word)
+            permutations = pool.map(self.get_permutations, positions)
 
-        all_combinations = []
-
-        for i in range(len(positions)):
-            for variation in permutations[i]:
-                # Create a new list with the ith element replaced by its variation
-                new_combination = positions[:i] + [variation] + positions[i + 1:]
-                all_combinations.append(new_combination)
+            all_combinations = []
+            for i, position in enumerate(positions):
+                for variation in permutations[i]:
+                    new_combination = positions[:i] + [variation] + positions[i + 1:]
+                    all_combinations.append(new_combination)
 
         return all_combinations
 
@@ -127,7 +128,9 @@ class Sorcerer:
     def predict(self, word):
         self.word = word
         variants = self.generate_variants()
-        suggestions = [(self.keyboard_to_word(variant), self.get_suggestions(len(word), variant)) for variant in variants]
+        with Pool() as pool:
+            suggestions = pool.starmap(self.get_suggestions,
+                                       [(len(word), variant) for variant in variants])
 
         if self.debug:
             self.display_debug_info(suggestions)
@@ -154,15 +157,14 @@ class Sorcerer:
         except IndexError:
             return None
 
-    def get_suggestions(self, count, variant):
-        corpus = self.corpus[count]
+    def get_suggestions(self, word_length, variant):
         distances = []
-        for word in corpus:
+        for word in self.corpus[word_length]:
             distances.append(sum(self.calculate_distance(word, variant)))
 
         sorted_with_index = sorted(enumerate(distances), key=lambda x: x[1])
+        return [(self.keyboard_to_word(variant), self.corpus[word_length][index], element) for index, element in sorted_with_index[:5]]
 
-        return [(corpus[index], element) for index, element in sorted_with_index[:5]]
 
     def calculate_distance(self, word, variant):
         encoded_word = self.word_to_keyboard(word)
@@ -173,14 +175,11 @@ class Sorcerer:
 
     def results(self, suggestions):
         min_distances = {}
-        for word, variant, distance in self.flatten_suggestions(suggestions):
+        for word, variant, distance in list(chain.from_iterable(suggestions)):
             if variant not in min_distances or distance < min_distances[variant][1]:
                 min_distances[variant] = (word, distance)
 
         return sorted(min_distances.items(), key=lambda x: x[1][1])
-
-    def flatten_suggestions(self, suggestions):
-        return [(word, variant, distance) for word, data in suggestions for variant, distance in data]
 
     def display_results(self, results):
         for variant, (word, distance) in results[:10]:
