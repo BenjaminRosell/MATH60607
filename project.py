@@ -89,9 +89,6 @@ class Sorcerer:
 
         return possible_permutations
 
-    def generate_misspells_parallel(self, args):
-        index, permutations, positions = args
-        return [positions[:index] + [variation] + positions[index + 1:] for variation in permutations]
 
     def generate_misspells(self):
         positions = self.word_to_keyboard(self.word)
@@ -145,7 +142,7 @@ class Sorcerer:
         results = self.results(suggestions)
 
         if results and self.mode == 'slim':
-            variant, (word, distance) = results[0]
+            word, (variant, distance) = results[0]
             return word
         else:
             self.display_results(results)
@@ -172,9 +169,6 @@ class Sorcerer:
 
     def calculate_distance(self, word, variant):
         encoded_word = self.word_to_keyboard(word)
-        # print(self.keyboard_to_word(variant))
-        # updated_list = [(0, 0) if x == (None, None) else x for x in encoded_word]
-        # print(self.keyboard_to_word(updated_list))
         return [sum((abs(a - c), abs(b - d))) for (a, b), (c, d) in zip(encoded_word, variant)]
 
     def results(self, suggestions):
@@ -191,7 +185,7 @@ class Sorcerer:
 
 
 @click.command()
-@click.option("--word", "-w", default='information', help="The word to predict variants for.")
+@click.option("--word", "-w", default='information', help="The word to predict variants for.", prompt="What is your word ? ")
 @click.option("--debug", "-d", is_flag=True, help="Enable debug mode.")
 @click.option("--mode", "-m", default="slim", type=click.Choice(['slim', 'full']), help="Output mode: 'slim' or 'full'.")
 @timer
