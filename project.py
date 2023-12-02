@@ -94,13 +94,20 @@ class Sorcerer:
         return [positions[:index] + [variation] + positions[index + 1:] for variation in permutations]
 
     def generate_misspells(self):
-        with Pool() as pool:
-            positions = self.word_to_keyboard(self.word)
-            permutations = pool.map(self.get_permutations, positions)
-            #preparing parallelization...
-            args = [(i, permutations[i], positions) for i in range(len(positions))]
-            all_combinations = pool.map(self.generate_misspells_parallel, args)
-            return list(chain.from_iterable(all_combinations))
+        positions = self.word_to_keyboard(self.word)
+        permutations = []
+        for position in positions:
+            permutations.append(self.get_permutations(position))
+
+        all_combinations = []
+
+        for i in range(len(positions)):
+            for variation in permutations[i]:
+                # Create a new list with the ith element replaced by its variation
+                new_combination = positions[:i] + [variation] + positions[i + 1:]
+                all_combinations.append(new_combination)
+
+        return all_combinations
 
     def generate_swaps(self):
         all_combinations = []
