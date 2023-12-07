@@ -132,9 +132,10 @@ class Sorcerer:
     def predict(self, word):
         self.word = word
         variants = self.generate_variants()
+        encoded_words = [self.word_to_keyboard(word) for word in self.corpus[len(word)]]
         with Pool() as pool:
             suggestions = pool.starmap(self.get_suggestions,
-                                       [(len(word), variant) for variant in variants])
+                                       [(encoded_words, variant) for variant in variants])
 
         if self.debug:
             self.display_debug_info(suggestions)
@@ -161,14 +162,13 @@ class Sorcerer:
         except IndexError:
             return None
 
-    def get_suggestions(self, word_length, variant):
-        distances = [sum(self.calculate_distance(word, variant)) for word in self.corpus[word_length]]
+    def get_suggestions(self, encoded_words, variant):
+        distances = [sum(self.calculate_distance(word, variant)) for word in encoded_words]
         sorted_with_index = sorted(enumerate(distances), key=lambda x: x[1])
-        return [(self.keyboard_to_word(variant), self.corpus[word_length][index], element) for index, element in sorted_with_index[:5]]
+        return [(self.keyboard_to_word(variant), self.keyboard_to_word(encoded_words[index]), element) for index, element in sorted_with_index[:5]]
 
 
-    def calculate_distance(self, word, variant):
-        encoded_word = self.word_to_keyboard(word)
+    def calculate_distance(self, encoded_word, variant):
         return [sum((abs(a - c), abs(b - d))) for (a, b), (c, d) in zip(encoded_word, variant)]
 
     def results(self, suggestions):
@@ -185,7 +185,7 @@ class Sorcerer:
 
 
 @click.command()
-@click.option("--word", "-w", default='information', help="The word to predict variants for.", prompt="What is your word ? ")
+@click.option("--word", "-w", default='information', help="The word to predict variants for.")
 @click.option("--debug", "-d", is_flag=True, help="Enable debug mode.")
 @click.option("--mode", "-m", default="slim", type=click.Choice(['slim', 'full']), help="Output mode: 'slim' or 'full'.")
 @timer
